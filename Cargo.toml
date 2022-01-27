@@ -1,5 +1,5 @@
 [package]
-name = "aritexpr"
+name = "scraper"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.10.1"
-async-std = "1.10.0"
+#async-std = "1.10.0"
 chrono = "0.4.19"
-reqwest = { version = "0.11.9", features = ["blocking"] }
+reqwest = { version = "0.11.9", features = ["blocking", "stream"] }
+async-std = { version = "1.10.0", features = ["tokio1"] }
+bytes = "1.1.0"
