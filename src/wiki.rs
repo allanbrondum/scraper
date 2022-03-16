@@ -15,8 +15,8 @@ pub async fn read_page(page_name: impl AsRef<str>) -> reqwest::Result<WikiPage> 
     let result = reqwest::get(to_url(&page_name)).await;
     debug_with_context("read page bytes");
     let response: Response = result?.error_for_status()?;
-    // let page_link_names = read_links_stream(response.bytes_stream()).await;
-    let page_link_names = read_links(response.bytes().await?.iter().copied());
+    let page_link_names = read_links_stream(response.bytes_stream()).await;
+    // let page_link_names = read_links(response.bytes().await?.iter().copied());
     Ok(WikiPage{ page_name: page_name.as_ref().to_string(), page_link_names})
 }
 
@@ -30,13 +30,16 @@ pub fn to_url(page_name: impl AsRef<str>) -> String {
     "http://en.wikipedia.org/wiki/".to_string() + page_name.as_ref()
 }
 
-// async fn read_links_stream(mut bytes: impl Stream<Item=reqwest::Result<Bytes>>) -> HashSet<String> {
-//     let mut link_page_names = HashSet::new();
-//     while let Some(bytes) = bytes.next().await {
-//         println!("{:?}", bytes);
-//     }
-//     link_page_names
-// }
+// async fn read_links_stream(mut bytes: impl Stream<Item=reqwest::Result<Bytes>> + std::marker::Unpin) -> HashSet<String> {
+async fn read_links_stream(mut bytes: impl Stream<Item=reqwest::Result<Bytes>>) -> HashSet<String> {
+    let mut link_page_names = HashSet::new();
+    // futures_lite::pin!(bytes);
+    let mut bytes = Box::pin(bytes);
+    while let Some(bytes_block) = bytes.next().await {
+        link_page_names.extend(read_links(bytes_block.unwrap().iter().copied()))
+    }
+    link_page_names
+}
 
 fn read_links(mut bytes: impl Iterator<Item=u8>) -> HashSet<String> {
     // this method is not exactly correct charset handling, but works for now
